@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nugget name="ABAP-URL-SHORTENER">
+ <CLAS CLSNAME="ZCL_T3G_AUS_MODEL" VERSION="1" LANGU="E" DESCRIPT="ABAP URL Shortener model" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <localImplementation>*&quot;* use this source file for the definition and implementation of
+*&quot;* local helper classes, interface definitions and type
+*&quot;* declarations</localImplementation>
+  <localTypes>*&quot;* use this source file for any type of declarations (class
+*&quot;* definitions, interfaces or type declarations) you need for
+*&quot;* components in the private section</localTypes>
+  <localMacros>*&quot;* use this source file for any macro definitions you need
+*&quot;* in the implementation part of the class</localMacros>
+  <typeUsage CLSNAME="ZCL_T3G_AUS_MODEL" TYPEGROUP="ABAP" VERSION="1" TPUTYPE="0" IMPLICIT="X"/>
+  <forwardDeclaration>ABAP</forwardDeclaration>
+  <attribute CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="MSGID" VERSION="1" LANGU="E" DESCRIPT="Message identification" EXPOSURE="2" STATE="1" EDITORDER="1 " ATTDECLTYP="2" ATTVALUE="&apos;ZT3G_AUS&apos;" ATTEXPVIRT="0" TYPTYPE="1" TYPE="MSGID" SRCROW1="0 " SRCCOLUMN1="0 " SRCROW2="0 " SRCCOLUMN2="0 " TYPESRC_LENG="0 "/>
+  <method CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE10" VERSION="1" LANGU="E" DESCRIPT="Convert ID to base10 [0-9]" EXPOSURE="0" STATE="1" EDITORDER="3 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE10" SCONAME="IP_URL" VERSION="1" LANGU="E" DESCRIPT="Link short URL" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="ZT3G_AUS_URL"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE10" SCONAME="RP_URL_ID" VERSION="1" LANGU="E" DESCRIPT="Link ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ZT3G_AUS_URL_ID"/>
+   <source>METHOD convert_to_base10.
+
+* Bidirectional conversion map
+*
+*   0  → a
+*   1  → b
+*   ...
+*   25 → z
+*   ...
+*   52 → 0
+*   61 → 9
+*
+
+  DATA: lv_char   TYPE c,
+        lv_times  TYPE i,
+        lv_offset TYPE i,
+        lv_factor TYPE i.
+
+  lv_times = strlen( ip_url ).
+
+  DO lv_times TIMES.
+    lv_offset = sy-index - 1.
+    lv_char = ip_url+lv_offset(1).
+
+    IF lv_char CA &apos;0123456789&apos;. &quot; 0 will be 52
+      &quot; Is a number
+      lv_factor = lv_char + 52.
+    ELSEIF lv_char CA sy-abcde.
+      &quot; Is uppercase
+      FIND FIRST OCCURRENCE OF lv_char IN sy-abcde MATCH OFFSET lv_factor.
+      lv_factor = lv_factor + 26.
+    ELSE.
+      &quot; Is lowercase
+      TRANSLATE lv_char TO UPPER CASE.
+      FIND FIRST OCCURRENCE OF lv_char IN sy-abcde MATCH OFFSET lv_factor.
+    ENDIF.
+
+    rp_url_id = rp_url_id + lv_factor * ( 62 ** ( lv_times - 1 - lv_offset ) ).
+
+  ENDDO.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE62" VERSION="1" LANGU="E" DESCRIPT="Convert ID to base62 [a-zA-Z0-9]" EXPOSURE="0" STATE="1" EDITORDER="4 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE62" SCONAME="IP_URL_ID" VERSION="1" LANGU="E" DESCRIPT="URL ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="ZT3G_AUS_URL_ID"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="CONVERT_TO_BASE62" SCONAME="RP_SURL" VERSION="1" LANGU="E" DESCRIPT="Link short URL" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ZT3G_AUS_URL"/>
+   <source>METHOD convert_to_base62.
+
+  DATA: lv_value      TYPE zt3g_aus_url_id,
+        lv_remainder  TYPE i,
+        lv_index      TYPE i,
+        lv_char       TYPE c.
+
+  lv_value = ip_url_id.
+
+  IF lv_value EQ 0.
+    rp_surl = &apos;aaaaaa&apos;.
+  ELSE.
+
+    WHILE lv_value &gt; 0.
+      lv_remainder = lv_value MOD 62.
+      lv_value = ( lv_value - lv_remainder ) / 62.
+
+      IF lv_remainder GE 52.
+        lv_char = lv_remainder - 52.
+      ELSEIF lv_remainder GE 26.
+        lv_index = lv_remainder - 26.
+        lv_char = sy-abcde+lv_index(1).
+      ELSE.
+        lv_index = lv_remainder.
+        lv_char = sy-abcde+lv_index(1).
+        TRANSLATE lv_char TO LOWER CASE.
+      ENDIF.
+      CONCATENATE rp_surl lv_char INTO rp_surl.
+    ENDWHILE.
+
+    WHILE strlen( rp_surl ) LT 6.
+      CONCATENATE &apos;a&apos; rp_surl INTO rp_surl.
+    ENDWHILE.
+  ENDIF.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GENERATE_SHORT_LINK" VERSION="1" LANGU="E" EXPOSURE="0" STATE="1" EDITORDER="5 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" MTDNEWEXC="X" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GENERATE_SHORT_LINK" SCONAME="IP_URL_ID" VERSION="1" LANGU="E" DESCRIPT="URL ID" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="ZT3G_AUS_URL_ID"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GENERATE_SHORT_LINK" SCONAME="PP_URL" VERSION="1" LANGU="E" DESCRIPT="Link short URL" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ZT3G_AUS_URL"/>
+   <exception CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GENERATE_SHORT_LINK" SCONAME="ZCX_T3G_EXCEPTION" VERSION="1" LANGU="E" DESCRIPT="Exception class" MTDTYPE="0" EDITORDER="1 "/>
+   <source>METHOD generate_short_link.
+
+  DATA: ls_slink      TYPE zt3g_aus_slinks,
+        lv_url        TYPE zt3g_aus_url,
+        ls_textid     TYPE scx_t100key,
+        lv_msgno      TYPE msgno,
+        lo_exception  TYPE REF TO zcx_t3g_exception.
+
+* Check if URL is in the blacklist or reserved list
+  lv_url = zcl_t3g_aus_model=&gt;convert_to_base62( ip_url_id ).
+
+  SELECT SINGLE *
+    INTO ls_slink
+    FROM zt3g_aus_slinks
+   WHERE link_surl EQ lv_url.
+
+  IF sy-subrc EQ 0.
+    IF ls_slink-blacklisted EQ abap_true.
+      lv_msgno = &apos;003&apos;.
+    ELSEIF ls_slink-reserved EQ abap_true.
+      lv_msgno = &apos;004&apos;.
+    ELSE.
+      lv_msgno = &apos;000&apos;.
+    ENDIF.
+
+    CLEAR ls_textid.
+    ls_textid-msgid = zcl_t3g_aus_model=&gt;msgid.
+    ls_textid-msgno = lv_msgno.
+    ls_textid-attr1 = lv_url.
+    CREATE OBJECT lo_exception TYPE zcx_t3g_exception
+      EXPORTING
+        textid = ls_textid.
+    RAISE EXCEPTION lo_exception.
+
+  ELSE.
+    pp_url = lv_url.
+
+  ENDIF.
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_LONG_URL" VERSION="1" LANGU="E" DESCRIPT="Returns the original URL associated to a short URL" EXPOSURE="2" STATE="1" EDITORDER="1 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" MTDNEWEXC="X" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_LONG_URL" SCONAME="IP_SHORT_URL" VERSION="1" LANGU="E" DESCRIPT="Link short URL" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="ZT3G_AUS_URL"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_LONG_URL" SCONAME="RP_URL" VERSION="1" LANGU="E" DESCRIPT="String" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="DSTRING"/>
+   <exception CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_LONG_URL" SCONAME="ZCX_T3G_EXCEPTION" VERSION="1" LANGU="E" DESCRIPT="Exception class" MTDTYPE="0" EDITORDER="1 "/>
+   <source>METHOD get_long_url.
+
+  DATA: ls_link       TYPE zt3g_aus_links,
+        lo_exception  TYPE REF TO zcx_t3g_exception,
+        ls_textid     TYPE scx_t100key.
+
+  SELECT SINGLE *
+    INTO ls_link
+    FROM zt3g_aus_links
+   WHERE link_surl = ip_short_url.
+
+* If no link is available raise exception
+  IF sy-subrc NE 0.
+    CLEAR ls_textid.
+    ls_textid-msgid = zcl_t3g_aus_model=&gt;msgid.
+    ls_textid-msgno = &apos;000&apos;.
+    ls_textid-ATTR1 = ip_short_url.
+    CREATE OBJECT lo_exception TYPE zcx_t3g_exception
+      EXPORTING
+        textid = ls_textid.
+    RAISE EXCEPTION lo_exception.
+  ENDIF.
+
+* If the link is no longer active
+  IF ls_link-active EQ abap_false.
+    CLEAR ls_textid.
+    ls_textid-msgid = zcl_t3g_aus_model=&gt;msgid.
+    ls_textid-msgno = &apos;005&apos;.
+    ls_textid-ATTR1 = ip_short_url.
+    CREATE OBJECT lo_exception TYPE zcx_t3g_exception
+      EXPORTING
+        textid = ls_textid.
+    RAISE EXCEPTION lo_exception.
+  ENDIF.
+
+  CONCATENATE ls_link-link1
+              ls_link-link2
+              ls_link-link3
+              ls_link-link4
+         INTO rp_url.
+
+ENDMETHOD.</source>
+  </method>
+  <method CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_SHORT_URL" VERSION="1" LANGU="E" DESCRIPT="Returns the shorten URL for a given URL" EXPOSURE="2" STATE="1" EDITORDER="2 " DISPID="0 " MTDTYPE="0" MTDDECLTYP="1" MTDNEWEXC="X" BCMTDCAT="00" BCMTDSYN="0">
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_SHORT_URL" SCONAME="IP_URL" VERSION="1" LANGU="E" DESCRIPT="String" CMPTYPE="1" MTDTYPE="0" EDITORDER="1 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="DSTRING"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_SHORT_URL" SCONAME="IP_ACTIVATE_IMMEDIATELY" VERSION="1" LANGU="E" DESCRIPT="Checkbox" CMPTYPE="1" MTDTYPE="0" EDITORDER="2 " DISPID="0 " PARDECLTYP="0" PARPASSTYP="1" TYPTYPE="1" TYPE="XFELD" PARVALUE="ABAP_TRUE"/>
+   <parameter CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_SHORT_URL" SCONAME="RP_SHORT_URL" VERSION="1" LANGU="E" DESCRIPT="Link short URL" CMPTYPE="1" MTDTYPE="0" EDITORDER="3 " DISPID="0 " PARDECLTYP="3" PARPASSTYP="0" TYPTYPE="1" TYPE="ZT3G_AUS_URL"/>
+   <exception CLSNAME="ZCL_T3G_AUS_MODEL" CMPNAME="GET_SHORT_URL" SCONAME="ZCX_T3G_EXCEPTION" VERSION="1" LANGU="E" DESCRIPT="Exception class" MTDTYPE="0" EDITORDER="1 "/>
+   <source>METHOD get_short_url.
+
+  DATA: lt_links   TYPE TABLE OF zt3g_aus_links,
+        ls_link    TYPE zt3g_aus_links,
+        lv_link_id TYPE zt3g_aus_url_id,
+        lo_exception TYPE REF TO zcx_t3g_exception.
+
+* Get last ID
+  SELECT * UP TO 1 ROWS
+    INTO TABLE lt_links
+    FROM zt3g_aus_links
+   ORDER BY link_surl DESCENDING.
+
+* No link generated yet, so we start from &apos;000000&apos;
+  IF sy-subrc NE 0.
+    lv_link_id = &apos;000000&apos;.
+  ELSE.
+* Convert link to base10 and increment by one
+    READ TABLE lt_links INTO ls_link INDEX 1.
+    lv_link_id = zcl_t3g_aus_model=&gt;convert_to_base10( ls_link-link_surl ).
+    lv_link_id = lv_link_id + 1.
+  ENDIF.
+
+  WHILE rp_short_url IS INITIAL.
+    TRY.
+        rp_short_url = zcl_t3g_aus_model=&gt;generate_short_link( lv_link_id ).
+      CATCH zcx_t3g_exception INTO lo_exception.
+        lv_link_id = lv_link_id + 1.
+        IF sy-index GT 10.
+          &quot; To avoid infinite loop
+          CREATE OBJECT lo_exception TYPE zcx_t3g_exception.
+          RAISE EXCEPTION lo_exception.
+        ENDIF.
+    ENDTRY.
+  ENDWHILE.
+
+* Save generated link
+  CLEAR ls_link.
+  ls_link-link_surl = rp_short_url.
+  ls_link-link1 = ip_url.
+  IF strlen( ip_url ) &gt; 1024.
+    ls_link-link2 = ip_url+1024.
+  ENDIF.
+  IF strlen( ip_url ) &gt; 2048.
+    ls_link-link3 = ip_url+2048.
+  ENDIF.
+  IF strlen( ip_url ) &gt; 3072.
+    ls_link-link4 = ip_url+3072.
+  ENDIF.
+  ls_link-active = ip_activate_immediately.
+
+  INSERT zt3g_aus_links FROM ls_link.
+
+ENDMETHOD.</source>
+  </method>
+ </CLAS>
+ <CLAS CLSNAME="ZCX_T3G_EXCEPTION" VERSION="1" LANGU="E" DESCRIPT="Exception class" CATEGORY="40" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 " REFCLSNAME="CX_STATIC_CHECK">
+  <implementing CLSNAME="ZCX_T3G_EXCEPTION" REFCLSNAME="IF_T100_MESSAGE" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1" EDITORDER="0 "/>
+  <localImplementation>*&quot;* use this source file for the definition and implementation of
+*&quot;* local helper classes, interface definitions and type
+*&quot;* declarations</localImplementation>
+  <localTypes>*&quot;* use this source file for any type of declarations (class
+*&quot;* definitions, interfaces or type declarations) you need for
+*&quot;* components in the private section</localTypes>
+  <localMacros>*&quot;* use this source file for any macro definitions you need
+*&quot;* in the implementation part of the class</localMacros>
+  <inheritance CLSNAME="ZCX_T3G_EXCEPTION" REFCLSNAME="CX_STATIC_CHECK" VERSION="1" STATE="1"/>
+ </CLAS>
+ <CLAS CLSNAME="ZCL_T3G_AUS_HANDLER" VERSION="1" LANGU="E" DESCRIPT="HTTP Handler" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+  <implementing CLSNAME="ZCL_T3G_AUS_HANDLER" REFCLSNAME="IF_HTTP_EXTENSION" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1" EDITORDER="1 "/>
+  <localImplementation>*&quot;* use this source file for the definition and implementation of
+*&quot;* local helper classes, interface definitions and type
+*&quot;* declarations</localImplementation>
+  <localTypes>*&quot;* use this source file for any type of declarations (class
+*&quot;* definitions, interfaces or type declarations) you need for
+*&quot;* components in the private section</localTypes>
+  <localMacros>*&quot;* use this source file for any macro definitions you need
+*&quot;* in the implementation part of the class</localMacros>
+  <interfaceMethod CLSNAME="ZCL_T3G_AUS_HANDLER" CPDNAME="IF_HTTP_EXTENSION~HANDLE_REQUEST">
+   <source>METHOD if_http_extension~handle_request.
+
+  DATA: lv_lines TYPE i,
+        lv_surl TYPE zt3g_aus_url,
+        lv_path TYPE string,
+        lt_path TYPE TABLE OF string,
+        ls_path TYPE string.
+
+  DATA: lo_exception TYPE REF TO zcx_t3g_exception.
+
+  lv_path = server-&gt;request-&gt;get_header_field( &apos;~path_translated&apos; ).
+
+  SPLIT lv_path AT &apos;/&apos; INTO TABLE lt_path.
+
+  DESCRIBE TABLE lt_path LINES lv_lines.
+
+  &quot; Get last part of the path.
+  READ TABLE lt_path INTO ls_path INDEX lv_lines.
+  lv_surl = ls_path.
+
+  TRY.
+      lv_path = zcl_t3g_aus_model=&gt;get_long_url( lv_surl ).
+      server-&gt;response-&gt;redirect( lv_path ).
+    CATCH zcx_t3g_exception INTO lo_exception.
+      server-&gt;response-&gt;set_status( code = 404
+                                    reason = &apos;Not Found&apos; ).
+  ENDTRY.
+
+ENDMETHOD.</source>
+  </interfaceMethod>
+ </CLAS>
+ <DTEL ROLLNAME="ZT3G_AUS_URL_ID" DDLANGUAGE="E" ROUTPUTLEN="000000" HEADLEN="07" SCRLEN1="07" SCRLEN2="07" SCRLEN3="07" DDTEXT="URL ID" REPTEXT="URL ID" SCRTEXT_S="URL ID" SCRTEXT_M="URL ID" SCRTEXT_L="URL ID" AUTHCLASS="00" DTELMASTER="E" DATATYPE="FLTP" LENG="000016" DECIMALS="000016" OUTPUTLEN="000022">
+  <tpara/>
+ </DTEL>
+ <DTEL ROLLNAME="ZT3G_AUS_URL" DDLANGUAGE="E" DOMNAME="TEXT6" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DDTEXT="Link short URL" REPTEXT="Link short URL" SCRTEXT_S="Short URL" SCRTEXT_M="Link short URL" SCRTEXT_L="Link short URL" AUTHCLASS="00" DTELMASTER="E" DATATYPE="CHAR" LENG="000006" DECIMALS="000000" OUTPUTLEN="000006" LOWERCASE="X" REFKIND="D">
+  <tpara/>
+ </DTEL>
+ <MSAG ARBGB="ZT3G_AUS" MASTERLANG="E" RESPUSER="FEMIA" STEXT="Message class for AUS">
+  <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="000" TEXT="Short URL &amp; is not valid."/>
+  <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="003" TEXT="Short URL &amp; is blacklisted."/>
+  <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="004" TEXT="Short URL &amp; is reserved."/>
+  <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="005" TEXT="Short URL &amp; is no longer available."/>
+  <t100t SPRSL="E" ARBGB="ZT3G_AUS" STEXT="Message class for AUS"/>
+ </MSAG>
+ <PROG NAME="ZT3G_AUS_GENERATE" VARCL="X" SUBC="1" RMAND="800" RLOAD="E" FIXPT="X" UCCHECK="X">
+  <textPool>
+   <language SPRAS="E">
+    <textElement ID="R" ENTRY="Generate Short URL" LENGTH="21 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp; Report  ZT3G_AUS_TEST
+*&amp;
+*&amp;---------------------------------------------------------------------*
+*&amp;
+*&amp;
+*&amp;---------------------------------------------------------------------*
+
+REPORT zt3g_aus_generate.
+
+DATA: lv_short_url TYPE zt3g_aus_url,
+      lv_full_url  TYPE string,
+      lt_servlist  TYPE TABLE OF icm_sinfo2,
+      ls_servlist  TYPE icm_sinfo2.
+
+
+PARAMETERS: ip_url TYPE string OBLIGATORY LOWER CASE,
+            ip_act TYPE xfeld DEFAULT abap_true.
+
+INITIALIZATION.
+  %_ip_url_%_app_%-text = &apos;Past your long URL&apos;.
+  %_ip_act_%_app_%-text = &apos;Short URL active immediately&apos;.
+
+START-OF-SELECTION.
+
+  lv_short_url = zcl_t3g_aus_model=&gt;get_short_url( ip_url = ip_url
+                                                   ip_activate_immediately = ip_act ).
+
+  CALL FUNCTION &apos;ICM_GET_INFO2&apos;
+    TABLES
+      servlist = lt_servlist.
+
+  &quot; Get HTTP hostname and port
+  READ TABLE lt_servlist INTO ls_servlist WITH KEY protocol = 1.
+
+  IF sy-subrc EQ 0.
+    CONCATENATE &apos;http://&apos; ls_servlist-hostname &apos;:&apos; ls_servlist-service &apos;/s/&apos; lv_short_url INTO lv_full_url.
+    WRITE / &apos;http short URL&apos;.
+    WRITE / lv_full_url.
+  ENDIF.
+
+  SKIP 1.
+
+  &quot; Get HTTPS hostname and port
+  READ TABLE lt_servlist INTO ls_servlist WITH KEY protocol = 2.
+  IF sy-subrc EQ 0.
+    CONCATENATE &apos;https://&apos; ls_servlist-hostname &apos;:&apos; ls_servlist-service &apos;/s/&apos; lv_short_url INTO lv_full_url.
+    WRITE / &apos;http2 short URL&apos;.
+    WRITE / lv_full_url.
+  ENDIF.</source>
+ </PROG>
+ <TABL TABNAME="ZT3G_AUS_LINKS" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="Links archive" AUTHCLASS="00" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
+  <dd09l TABNAME="ZT3G_AUS_LINKS" AS4LOCAL="A" AS4VERS="0000" TABKAT="1" TABART="APPL0" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="LINK_SURL" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="ZT3G_AUS_URL" ADMINFIELD="0" INTTYPE="C" INTLEN="000012" NOTNULL="X" DOMNAME="TEXT6" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="E" DATATYPE="CHAR" LENG="000006" OUTPUTLEN="000006" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Link short URL" REPTEXT="Link short URL" SCRTEXT_S="Short URL" SCRTEXT_M="Link short URL" SCRTEXT_L="Link short URL" DOMNAME3L="TEXT6" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="LINK1" DDLANGUAGE="E" POSITION="0003" ROLLNAME="TEXT1024" ADMINFIELD="0" INTTYPE="C" INTLEN="002048" DOMNAME="TEXTA1024" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="001024" OUTPUTLEN="001024" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Case-Sensitive Length 1024" DOMNAME3L="TEXTA1024" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="LINK2" DDLANGUAGE="E" POSITION="0004" ROLLNAME="TEXT1024" ADMINFIELD="0" INTTYPE="C" INTLEN="002048" DOMNAME="TEXTA1024" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="001024" OUTPUTLEN="001024" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Case-Sensitive Length 1024" DOMNAME3L="TEXTA1024" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="LINK3" DDLANGUAGE="E" POSITION="0005" ROLLNAME="TEXT1024" ADMINFIELD="0" INTTYPE="C" INTLEN="002048" DOMNAME="TEXTA1024" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="001024" OUTPUTLEN="001024" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Case-Sensitive Length 1024" DOMNAME3L="TEXTA1024" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="LINK4" DDLANGUAGE="E" POSITION="0006" ROLLNAME="TEXT_512" ADMINFIELD="0" INTTYPE="C" INTLEN="001024" DOMNAME="TEXT_512" ROUTPUTLEN="000000" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="000512" OUTPUTLEN="000512" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Case-Sensitive Work Area" DOMNAME3L="TEXT_512" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_LINKS" FIELDNAME="ACTIVE" DDLANGUAGE="E" POSITION="0007" ROLLNAME="XFELD" ADMINFIELD="0" INTTYPE="C" INTLEN="000002" DOMNAME="XFELD" ROUTPUTLEN="000000" LOGFLAG="X" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="000001" OUTPUTLEN="000001" DECIMALS="000000" VALEXI="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Checkbox" DOMNAME3L="XFELD" SHLPORIGIN="F" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+ </TABL>
+ <TABL TABNAME="ZT3G_AUS_SLINKS" DDLANGUAGE="E" TABCLASS="TRANSP" DATMIN="0000000000" DATMAX="0000000000" DATAVG="0000000000" CLIDEP="X" DDTEXT="Blacklisted and reserved short link" AUTHCLASS="00" MAINFLAG="X" CONTFLAG="A" PROZPUFF="000" EXCLASS="1">
+  <dd09l TABNAME="ZT3G_AUS_SLINKS" AS4LOCAL="A" AS4VERS="0000" TABKAT="1" TABART="APPL0" PUFFERUNG="X" SCHFELDANZ="000" PROTOKOLL="X" BUFALLOW="X"/>
+  <dd03p TABNAME="ZT3G_AUS_SLINKS" FIELDNAME="MANDT" DDLANGUAGE="E" POSITION="0001" KEYFLAG="X" ROLLNAME="MANDT" ADMINFIELD="0" INTTYPE="C" INTLEN="000006" NOTNULL="X" DOMNAME="MANDT" ROUTPUTLEN="000000" HEADLEN="03" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="D" DATATYPE="CLNT" LENG="000003" OUTPUTLEN="000003" DECIMALS="000000" ENTITYTAB="T000" MASK="  CLNTE" MASKLEN="0000" DDTEXT="Client" REPTEXT="Cl." SCRTEXT_S="Client" SCRTEXT_M="Client" SCRTEXT_L="Client" DOMNAME3L="MANDT" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_SLINKS" FIELDNAME="LINK_SURL" DDLANGUAGE="E" POSITION="0002" KEYFLAG="X" ROLLNAME="ZT3G_AUS_URL" ADMINFIELD="0" INTTYPE="C" INTLEN="000012" NOTNULL="X" DOMNAME="TEXT6" ROUTPUTLEN="000000" HEADLEN="14" SCRLEN1="10" SCRLEN2="15" SCRLEN3="20" DTELMASTER="E" DATATYPE="CHAR" LENG="000006" OUTPUTLEN="000006" DECIMALS="000000" LOWERCASE="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Link short URL" REPTEXT="Link short URL" SCRTEXT_S="Short URL" SCRTEXT_M="Link short URL" SCRTEXT_L="Link short URL" DOMNAME3L="TEXT6" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_SLINKS" FIELDNAME="BLACKLISTED" DDLANGUAGE="E" POSITION="0003" ROLLNAME="XFELD" ADMINFIELD="0" INTTYPE="C" INTLEN="000002" DOMNAME="XFELD" ROUTPUTLEN="000000" LOGFLAG="X" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="000001" OUTPUTLEN="000001" DECIMALS="000000" VALEXI="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Checkbox" DOMNAME3L="XFELD" SHLPORIGIN="F" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+  <dd03p TABNAME="ZT3G_AUS_SLINKS" FIELDNAME="RESERVED" DDLANGUAGE="E" POSITION="0004" ROLLNAME="XFELD" ADMINFIELD="0" INTTYPE="C" INTLEN="000002" DOMNAME="XFELD" ROUTPUTLEN="000000" LOGFLAG="X" HEADLEN="00" SCRLEN1="00" SCRLEN2="00" SCRLEN3="00" DTELMASTER="D" DATATYPE="CHAR" LENG="000001" OUTPUTLEN="000001" DECIMALS="000000" VALEXI="X" MASK="  CHARE" MASKLEN="0000" DDTEXT="Checkbox" DOMNAME3L="XFELD" SHLPORIGIN="F" DEPTH="00" COMPTYPE="E" EXCLASS="0" DBPOSITION="0000" OUTPUTSTYLE="00" STRORLOCPOS="00"/>
+ </TABL>
+</nugget>

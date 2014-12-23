@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MSAG ARBGB="ZT3G_AUS" MASTERLANG="E" RESPUSER="FEMIA" STEXT="Message class for AUS">
+ <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="000" TEXT="Short URL &amp; is not valid."/>
+ <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="003" TEXT="Short URL &amp; is blacklisted."/>
+ <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="004" TEXT="Short URL &amp; is reserved."/>
+ <t100 SPRSL="E" ARBGB="ZT3G_AUS" MSGNR="005" TEXT="Short URL &amp; is no longer available."/>
+ <t100t SPRSL="E" ARBGB="ZT3G_AUS" STEXT="Message class for AUS"/>
+</MSAG>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PROG NAME="ZT3G_AUS_GENERATE" VARCL="X" SUBC="1" RMAND="800" RLOAD="E" FIXPT="X" UCCHECK="X">
+ <textPool>
+  <language SPRAS="E">
+   <textElement ID="R" ENTRY="Generate Short URL" LENGTH="21 "/>
+  </language>
+ </textPool>
+ <source>*&amp;---------------------------------------------------------------------*
+*&amp; Report  ZT3G_AUS_TEST
+*&amp;
+*&amp;---------------------------------------------------------------------*
+*&amp;
+*&amp;
+*&amp;---------------------------------------------------------------------*
+
+REPORT zt3g_aus_generate.
+
+DATA: lv_short_url TYPE zt3g_aus_url,
+      lv_full_url  TYPE string,
+      lt_servlist  TYPE TABLE OF icm_sinfo2,
+      ls_servlist  TYPE icm_sinfo2.
+
+
+PARAMETERS: ip_url TYPE string OBLIGATORY LOWER CASE,
+            ip_act TYPE xfeld DEFAULT abap_true.
+
+INITIALIZATION.
+  %_ip_url_%_app_%-text = &apos;Past your long URL&apos;.
+  %_ip_act_%_app_%-text = &apos;Short URL active immediately&apos;.
+
+START-OF-SELECTION.
+
+  lv_short_url = zcl_t3g_aus_model=&gt;get_short_url( ip_url = ip_url
+                                                   ip_activate_immediately = ip_act ).
+
+  CALL FUNCTION &apos;ICM_GET_INFO2&apos;
+    TABLES
+      servlist = lt_servlist.
+
+  &quot; Get HTTP hostname and port
+  READ TABLE lt_servlist INTO ls_servlist WITH KEY protocol = 1.
+
+  IF sy-subrc EQ 0.
+    CONCATENATE &apos;http://&apos; ls_servlist-hostname &apos;:&apos; ls_servlist-service &apos;/s/&apos; lv_short_url INTO lv_full_url.
+    WRITE / &apos;http short URL&apos;.
+    WRITE / lv_full_url.
+  ENDIF.
+
+  SKIP 1.
+
+  &quot; Get HTTPS hostname and port
+  READ TABLE lt_servlist INTO ls_servlist WITH KEY protocol = 2.
+  IF sy-subrc EQ 0.
+    CONCATENATE &apos;https://&apos; ls_servlist-hostname &apos;:&apos; ls_servlist-service &apos;/s/&apos; lv_short_url INTO lv_full_url.
+    WRITE / &apos;http2 short URL&apos;.
+    WRITE / lv_full_url.
+  ENDIF.</source>
+</PROG>

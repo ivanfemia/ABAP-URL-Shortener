@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CLAS CLSNAME="ZCL_T3G_AUS_HANDLER" VERSION="1" LANGU="E" DESCRIPT="HTTP Handler" CATEGORY="00" EXPOSURE="2" STATE="1" RELEASE="0" CLSFINAL="X" CLSCCINCL="X" FIXPT="X" UNICODE="X" CLSBCCAT="00" DURATION_TYPE="0 " RISK_LEVEL="0 ">
+ <implementing CLSNAME="ZCL_T3G_AUS_HANDLER" REFCLSNAME="IF_HTTP_EXTENSION" VERSION="1" EXPOSURE="2" STATE="1" RELTYPE="1" EDITORDER="1 "/>
+ <localImplementation>*&quot;* use this source file for the definition and implementation of
+*&quot;* local helper classes, interface definitions and type
+*&quot;* declarations</localImplementation>
+ <localTypes>*&quot;* use this source file for any type of declarations (class
+*&quot;* definitions, interfaces or type declarations) you need for
+*&quot;* components in the private section</localTypes>
+ <localMacros>*&quot;* use this source file for any macro definitions you need
+*&quot;* in the implementation part of the class</localMacros>
+ <interfaceMethod CLSNAME="ZCL_T3G_AUS_HANDLER" CPDNAME="IF_HTTP_EXTENSION~HANDLE_REQUEST">
+  <source>METHOD if_http_extension~handle_request.
+
+  DATA: lv_lines TYPE i,
+        lv_surl TYPE zt3g_aus_url,
+        lv_path TYPE string,
+        lt_path TYPE TABLE OF string,
+        ls_path TYPE string.
+
+  DATA: lo_exception TYPE REF TO zcx_t3g_exception.
+
+  lv_path = server-&gt;request-&gt;get_header_field( &apos;~path_translated&apos; ).
+
+  SPLIT lv_path AT &apos;/&apos; INTO TABLE lt_path.
+
+  DESCRIBE TABLE lt_path LINES lv_lines.
+
+  &quot; Get last part of the path.
+  READ TABLE lt_path INTO ls_path INDEX lv_lines.
+  lv_surl = ls_path.
+
+  TRY.
+      lv_path = zcl_t3g_aus_model=&gt;get_long_url( lv_surl ).
+      server-&gt;response-&gt;redirect( lv_path ).
+    CATCH zcx_t3g_exception INTO lo_exception.
+      server-&gt;response-&gt;set_status( code = 404
+                                    reason = &apos;Not Found&apos; ).
+  ENDTRY.
+
+ENDMETHOD.</source>
+ </interfaceMethod>
+</CLAS>
